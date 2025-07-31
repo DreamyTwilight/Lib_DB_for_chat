@@ -1,5 +1,7 @@
-# Lib_DB_for_chat
+# lib_db_for_chat
 Library for creating and managing a SQLite database for chat applications.
+
+Source code of the libdb in the project: https://github.com/ya-masterskaya-cpp/q2_2025_chat_project_team_2
 
 ## sqlite_bd
 
