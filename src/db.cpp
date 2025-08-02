@@ -261,45 +261,27 @@ namespace db {
         return users;
     }
 
-    std::vector<Message> DB::GetRecentMessagesRoom(const std::string& room) {
+    std::vector<Message> DB::GetRangeMessagesRoom(const std::string& room, int64_t id_message_begin, int64_t id_message_end) {
         std::vector<Message> messages;
-        Stmt stmt(db_, sql::GET_RECENT_ROOM_MESSAGES);
+        Stmt stmt(db_, sql::GET_RANGE_MESSAGES_ROOM);
         stmt.Bind(1, room);
+        stmt.Bind(2, id_message_begin);
+        stmt.Bind(3, id_message_end);
         int rc;
         while ((rc = sqlite3_step(stmt.Get())) == SQLITE_ROW) {
             std::string message = stmt.GetColumnText(0);
             std::string login = stmt.GetColumnText(1);
             std::string room = stmt.GetColumnText(2);
             int64_t unixtime = sqlite3_column_int64(stmt.Get(), 3);
-            int64_t  number_message_in_room = sqlite3_column_int64(stmt.Get(), 4);
-            messages.emplace_back(message, unixtime, login, room, number_message_in_room);
+            int64_t  id_message_in_room = sqlite3_column_int64(stmt.Get(), 4);
+            messages.emplace_back(message, unixtime, login, room, id_message_in_room);
         }
         if (rc != SQLITE_DONE) {
             std::cerr << "SQL error during fetch: " << sqlite3_errmsg(db_) << "\n";
         }
         return messages;
     }
-
-    std::vector<Message> DB::GetMessagesRoomAfter(const std::string& room, int64_t number_message_in_room) {
-        std::vector<Message> messages;
-        Stmt stmt(db_, sql::GET_MESSAGES_ROOM_AFTER);
-        stmt.Bind(1, room);
-        stmt.Bind(2, number_message_in_room);
-        int rc;
-        while ((rc = sqlite3_step(stmt.Get())) == SQLITE_ROW) {
-            std::string message = stmt.GetColumnText(0);
-            std::string login = stmt.GetColumnText(1);
-            std::string room = stmt.GetColumnText(2);
-            int64_t unixtime = sqlite3_column_int64(stmt.Get(), 3);
-            int64_t  number_message_in_room  = sqlite3_column_int64(stmt.Get(), 4);
-            messages.emplace_back(message, unixtime, login, room, number_message_in_room);
-        }
-        if (rc != SQLITE_DONE) {
-            std::cerr << "SQL error during fetch: " << sqlite3_errmsg(db_) << "\n";
-        }
-        return messages;
-    }
-
+    
     bool DB::PerformSQLReturnBool(const char* sql_query, std::vector<std::string> param) {
         Stmt stmt(db_, sql_query);
         for (size_t i = 0; i < param.size(); ++i) {
@@ -326,7 +308,7 @@ namespace db {
         stmt.Bind(4, message.room);
         stmt.Bind(5, date);
         stmt.Bind(6, time);
-        stmt.Bind(7, message.number_message_in_room);
+        stmt.Bind(7, message.id_message_in_room);
         bool success = sqlite3_step(stmt.Get()) == SQLITE_DONE;
         return success;
     }

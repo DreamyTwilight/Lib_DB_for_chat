@@ -152,35 +152,20 @@ namespace sql {
             AND rooms_id = (SELECT rooms_id FROM rooms WHERE room = ?);
     )sql";
 
-    static const char* GET_RECENT_ROOM_MESSAGES = R"sql(
+    static const char* GET_RANGE_MESSAGES_ROOM = R"sql(
         SELECT 
             m.message,
             u.login       AS user_login,
             r.room        AS room_name,
             m.unixtime,
-            m.number_message_in_room
+            m.id_message_in_room
         FROM messages AS m
         JOIN users AS u   ON m.users_id = u.users_id
         JOIN rooms AS r   ON m.rooms_id = r.rooms_id
         WHERE r.room = ?
-        ORDER BY m.number_message_in_room DESC
-        LIMIT 50;
-    )sql";
-
-    static const char* GET_MESSAGES_ROOM_AFTER = R"sql(
-        SELECT 
-            m.message,
-            u.login       AS user_login,
-            r.room        AS room_name,
-            m.unixtime,
-            m.number_message_in_room
-        FROM messages AS m
-        JOIN users AS u   ON m.users_id = u.users_id
-        JOIN rooms AS r   ON m.rooms_id = r.rooms_id
-        WHERE r.room = ?
-          AND m.number_message_in_room < ?
-        ORDER BY m.number_message_in_room DESC
-        LIMIT 50;
+          AND m.id_message_in_room <= ?
+          AND m.id_message_in_room >= ?
+        ORDER BY m.id_message_in_room DESC;
     )sql";
 
     static const char* GET_COUNT_ROOM_MESSAGES = R"sql(
@@ -198,7 +183,7 @@ namespace sql {
             rooms_id,
             date,
             time,
-            number_message_in_room
+            id_message_in_room
         )
             VALUES(
                 ?, ?,
@@ -247,10 +232,10 @@ namespace sql {
             rooms_id INTEGER NOT NULL REFERENCES rooms(rooms_id) ON DELETE CASCADE,
             date TEXT NOT NULL,
             time TEXT NOT NULL,
-            number_message_in_room INTEGER NOT NULL
+            id_message_in_room INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_messages_room_user ON messages(rooms_id, users_id);
-        CREATE INDEX IF NOT EXISTS idx_room_number_message ON messages(rooms_id, number_message_in_room DESC);
+        CREATE INDEX IF NOT EXISTS idx_room_number_message ON messages(rooms_id, id_message_in_room DESC);
         
         CREATE TABLE IF NOT EXISTS user_rooms (
             user_rooms_id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -172,16 +172,24 @@ TEST_CASE("Message History and Pagination") {
     db.CreateUser(user);
     db.AddUserToRoom("user1", "general");
 
-    SECTION("Recent messages") {
-       REQUIRE(db.InsertMessageToDB(msg));
-       REQUIRE(db.GetCountRoomMessages("general") == 1);
- 
-       auto messages = db.GetRecentMessagesRoom("general");
-       REQUIRE(messages.size() == 1);
-       REQUIRE(messages[0].message == "Hello");
+    SECTION("Receiving a message with a non-existent message ID") {
+        REQUIRE(db.InsertMessageToDB(msg));
+        REQUIRE(db.GetCountRoomMessages("general") == 1);
+
+        auto messages = db.GetRangeMessagesRoom("general", 0, 0);
+        REQUIRE(messages.empty());
     }
 
-    SECTION("Pagination and get count messages") {
+    SECTION("Receiving one message by ID") {
+        REQUIRE(db.InsertMessageToDB(msg));
+        REQUIRE(db.GetCountRoomMessages("general") == 1);
+
+        auto messages = db.GetRangeMessagesRoom("general", 1000, 1000);
+        REQUIRE(messages.size() == 1);
+        REQUIRE(messages[0].message == "Hello");
+    }
+
+    SECTION("Pagination by id_messages and get count messages") {
 
         for (int i = 0; i < 60; i++) {
             int64_t u_time = utime::GetUnixTimeNs();
@@ -189,11 +197,15 @@ TEST_CASE("Message History and Pagination") {
         }
         REQUIRE(db.GetCountRoomMessages("general") == 60);
 
-        auto first_page = db.GetRecentMessagesRoom("general");
-        REQUIRE(first_page.size() == 50);
+        auto first_page = db.GetRangeMessagesRoom("general", 59, 50);
+        REQUIRE(first_page.size() == 10);
+        REQUIRE(first_page[0].id_message_in_room == 59);
+        REQUIRE(first_page[9].id_message_in_room == 50);
 
-        auto second_page = db.GetMessagesRoomAfter("general", first_page.back().number_message_in_room);
+        auto second_page = db.GetRangeMessagesRoom("general", 49, 40);
         REQUIRE(second_page.size() == 10);
+        REQUIRE(second_page[0].id_message_in_room == 49);
+        REQUIRE(second_page[9].id_message_in_room == 40);
     }
 }
 TEST_CASE("User management 2") {
@@ -223,7 +235,7 @@ TEST_CASE("User management 2") {
 
         REQUIRE(db.GetUserRooms("user1")[0] == "general");
 
-        auto messages = db.GetRecentMessagesRoom("general");
+        auto messages = db.GetRangeMessagesRoom("general", 0, 0);
         REQUIRE(messages[0].message == "Hello");
         REQUIRE(messages[0].room == "general");
         REQUIRE(messages[0].unixtime == utime_message);
@@ -322,7 +334,7 @@ TEST_CASE("Operations with non-existent entities") {
     }
 
     SECTION("Getting messages from an empty or non-existent room") {
-        REQUIRE(db.GetRecentMessagesRoom("non_existent_room").empty());
+        REQUIRE(db.GetRangeMessagesRoom("non_existent_room", 0, 0).empty());
         REQUIRE(db.GetCountRoomMessages("non_existent_room") == 0); 
     }
 }

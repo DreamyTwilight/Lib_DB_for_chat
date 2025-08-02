@@ -23,18 +23,18 @@ namespace db {
     struct Message {
         
         Message(std::string message, int64_t unixtime, 
-                std::string user_login, std::string room, int64_t number_message_in_room):
+                std::string user_login, std::string room, int64_t id_message_in_room):
             message(message), 
             unixtime(unixtime), 
             user_login(user_login), 
             room(room), 
-            number_message_in_room(number_message_in_room){}
+            id_message_in_room(id_message_in_room){}
         
         std::string message;
         int64_t unixtime; //ns
         std::string user_login;
         std::string room;
-        int64_t number_message_in_room;
+        int64_t id_message_in_room;
     };
 
     class DB {
@@ -75,11 +75,8 @@ namespace db {
         std::vector<std::string> GetRooms();
 
         // --- Messages ---
-        bool InsertMessageToDB(const Message& message); //
-        // первые 50 сообщений (последние по времени создания):
-        std::vector<Message> GetRecentMessagesRoom(const std::string& room);
-        // следующие 50 после временной метки unixtime:
-        std::vector<Message> GetMessagesRoomAfter(const std::string& room, int64_t unixtime);
+        bool InsertMessageToDB(const Message& message); 
+        std::vector<Message> GetRangeMessagesRoom(const std::string& room, int64_t id_message_begin, int64_t id_message_end);
         int GetCountRoomMessages(const std::string& room);
 
     private:
